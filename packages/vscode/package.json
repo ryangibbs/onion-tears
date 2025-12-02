@@ -1,0 +1,72 @@
+{
+  "name": "onion-tears",
+  "version": "1.0.0",
+  "type": "module",
+  "displayName": "Onion Tears",
+  "description": "TypeScript complexity analysis with VSCode integration",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "node esbuild.js",
+    "vscode:prepublish": "pnpm build",
+    "package": "vsce package --no-dependencies --allow-missing-repository"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "onionTears.showControlFlowMenu",
+        "title": "Show Control Flow Graph"
+      }
+    ],
+    "configuration": {
+      "title": "Onion Tears",
+      "properties": {
+        "onionTears.complexity.cyclomaticWarning": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "Cyclomatic complexity threshold for warnings",
+          "scope": "resource"
+        },
+        "onionTears.complexity.cyclomaticError": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "description": "Cyclomatic complexity threshold for errors",
+          "scope": "resource"
+        }
+      }
+    }
+  },
+  "keywords": [
+    "complexity",
+    "cyclomatic",
+    "cognitive",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "icon": "icon.png",
+  "publisher": "onion-party",
+  "dependencies": {
+    "@onion-tears/core": "workspace:*",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.9.3"
+  }
+}

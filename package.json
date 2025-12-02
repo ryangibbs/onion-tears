@@ -1,0 +1,32 @@
+{
+  "name": "onion-tears",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TypeScript complexity analysis monorepo",
+  "keywords": [
+    "complexity",
+    "cyclomatic",
+    "cognitive",
+    "typescript",
+    "analysis",
+    "monorepo"
+  ],
+  "license": "ISC",
+  "author": "",
+  "packageManager": "pnpm@10.23.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @onion-tears/core dev",
+    "test": "pnpm -r test",
+    "lint": "oxlint .",
+    "format": "oxfmt -c oxfmt.json packages",
+    "cli": "pnpm --filter @onion-tears/cli exec onion-tears",
+    "cli:link": "cd /Users/ryangibbs/Code/onion-tears/packages/cli && pnpm link --global",
+    "package:vscode": "pnpm --filter onion-tears package"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.15.0",
+    "oxlint": "^1.30.0",
+    "tsx": "^4.20.6"
+  }
+}

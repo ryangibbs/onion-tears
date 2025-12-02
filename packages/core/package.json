@@ -1,0 +1,36 @@
+{
+  "name": "@onion-tears/core",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TypeScript complexity analysis core library",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest"
+  },
+  "keywords": [
+    "complexity",
+    "cyclomatic",
+    "cognitive",
+    "typescript",
+    "analysis"
+  ],
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.0.14",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  }
+}

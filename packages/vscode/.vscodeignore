@@ -1,0 +1,29 @@
+# Source files
+src/**
+*.ts
+tsconfig.json
+esbuild.js
+
+# Tests and coverage
+coverage/**
+**/*.test.*
+
+# Development files
+.vscode/**
+test.code-workspace
+.gitignore
+.oxlintrc.json
+oxfmt.json
+
+# Build artifacts
+pnpm-lock.yaml
+*.tgz
+
+# Graphs
+graphs/**
+
+# Keep only the bundled extension
+dist/**
+!dist/extension.js
+!dist/extension.js.map
+!dist/package.json
