@@ -1,4 +1,4 @@
-import type { Config } from "./types.js"
+import type { Config } from './types.js'
 
 export function getDefaultConfiguration(): Config {
   return {

@@ -1,14 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
-import {
-  analyzeSourceFile,
-  generateMermaidForFunction,
-} from '@onion-tears/core'
+import { analyzeSourceFile, generateMermaidForFunction } from '@onion-tears/core'
 import type { Config, FileComplexityResult } from '@onion-tears/core'
 import { cleanFilesFromDirectory, getThresholdStatusBadge } from './util.js'
 
-export function runFileCommand(filePath: string, generateGraphs: boolean, outputDir: string, config: Config) {
+export function runFileCommand(
+  filePath: string,
+  generateGraphs: boolean,
+  outputDir: string,
+  config: Config,
+) {
   const fullPath = path.resolve(filePath)
 
   if (!fs.existsSync(fullPath)) {
@@ -26,7 +28,6 @@ export function runFileCommand(filePath: string, generateGraphs: boolean, output
     fileName: path.basename(filePath),
     results: analyzeSourceFile(sourceFile, config),
   }
-
 
   displayResults([result])
 
@@ -54,7 +55,7 @@ export function runProjectCommand(dir: string, exclude: string[], config: Config
   if (!configPath) {
     throw new Error(`tsconfig.json not found in directory: ${projectPath}`)
   }
-  
+
   console.log(`Using TypeScript project: ${configPath}\n`)
   analyzeTypescriptProject(configPath, exclude, config)
 }
@@ -115,8 +116,12 @@ function displayResults(fileResults: FileComplexityResult[]) {
 
     results.forEach((result) => {
       console.log(`[Line] ${result.line} Function: ${result.functionName}()`)
-      console.log(`${getThresholdStatusBadge(result.thresholdStatus)} Cyclomatic Complexity: ${result.cyclomatic}`)
-      console.log(`${getThresholdStatusBadge(result.thresholdStatus)} Cognitive Complexity: ${result.cognitive}`)
+      console.log(
+        `${getThresholdStatusBadge(result.thresholdStatus)} Cyclomatic Complexity: ${result.cyclomatic}`,
+      )
+      console.log(
+        `${getThresholdStatusBadge(result.thresholdStatus)} Cognitive Complexity: ${result.cognitive}`,
+      )
       console.log('\n')
 
       maxCyclomaticComplexity = Math.max(maxCyclomaticComplexity, result.cyclomatic)

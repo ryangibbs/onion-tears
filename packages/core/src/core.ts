@@ -2,7 +2,10 @@ import type { Config, FunctionComplexityResult, ThresholdStatus } from './types.
 import ts from 'typescript'
 import { parseFunctionName } from './util.js'
 
-export function analyzeSourceFile(sourceFile: ts.SourceFile, config: Config): FunctionComplexityResult[] {
+export function analyzeSourceFile(
+  sourceFile: ts.SourceFile,
+  config: Config,
+): FunctionComplexityResult[] {
   const results: FunctionComplexityResult[] = []
 
   const fileVisitor = (node: ts.Node): void => {
@@ -34,7 +37,7 @@ export function analyzeSourceFile(sourceFile: ts.SourceFile, config: Config): Fu
         } else if (config.cyclomaticWarning && cyclomatic >= config.cyclomaticWarning) {
           thresholdStatus = 'warning'
         }
-        
+
         const result: FunctionComplexityResult = {
           cyclomatic,
           thresholdStatus,

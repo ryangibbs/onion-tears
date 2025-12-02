@@ -135,7 +135,7 @@ describe('analyzeSourceFile', () => {
         return 42;
       }
     `)
-    
+
     const [result] = analyzeSourceFile(sourceFile, config)
     expect(result?.thresholdStatus).toBeUndefined()
   })

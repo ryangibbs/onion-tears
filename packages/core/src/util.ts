@@ -1,6 +1,5 @@
 import ts from 'typescript'
 
-
 export function parseFunctionName(node: ts.Node, sourceFile: ts.SourceFile): string {
   let functionName = 'anonymous'
   if (ts.isFunctionDeclaration(node) && node.name) {
