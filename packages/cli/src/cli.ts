@@ -2,6 +2,7 @@ import { runFileCommand, runProjectCommand } from './commands.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { createConfiguration } from '@onion-tears/core'
+import { loadConfigFile } from './config-loader.js'
 
 yargs(hideBin(process.argv))
   .scriptName('complexity')
@@ -20,15 +21,26 @@ yargs(hideBin(process.argv))
         description: 'Generate Mermaid control flow graphs',
         default: false,
       },
-      outputDir: {
-        type: 'string',
-        description: 'Output directory for Mermaid graphs',
-        default: './graphs',
+      warning: {
+        alias: 'w',
+        type: 'number',
+        description: 'Cyclomatic complexity warning threshold',
+        default: 10,
+      },
+      error: {
+        alias: 'e',
+        type: 'number',
+        description: 'Cyclomatic complexity error threshold',
+        default: 20,
       },
     },
     (argv) => {
-      const config = createConfiguration({})
-      runFileCommand(argv.file, argv.graph, argv.outputDir, config)
+      const config = createConfiguration({
+        cyclomaticWarning: argv.warning,
+        cyclomaticError: argv.error,
+        ...loadConfigFile(),
+      })
+      runFileCommand(argv.file, argv.graph, config)
     },
   )
   .command(
@@ -37,19 +49,28 @@ yargs(hideBin(process.argv))
     {
       dir: {
         describe: 'Project directory (defaults to current directory)',
-        type: 'string',
         default: '.',
       },
-      exclude: {
+      warning: {
+        alias: 'w',
+        type: 'number',
+        description: 'Cyclomatic complexity warning threshold',
+        default: 10,
+      },
+      error: {
         alias: 'e',
-        type: 'array',
-        description: 'Patterns to exclude (e.g., node_modules, dist)',
-        default: ['node_modules', 'dist', '.git', '*.test.ts', '*.spec.ts'],
+        type: 'number',
+        description: 'Cyclomatic complexity error threshold',
+        default: 20,
       },
     },
     (argv) => {
-      const config = createConfiguration({})
-      runProjectCommand(argv.dir, argv.exclude as string[], config)
+      const config = createConfiguration({
+        cyclomaticWarning: argv.warning,
+        cyclomaticError: argv.error,
+        ...loadConfigFile(),
+      })
+      runProjectCommand(argv.dir, config)
     },
   )
   .demandCommand(1, 'You must provide a command')

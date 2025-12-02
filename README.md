@@ -1,16 +1,20 @@
 # Onion Tears
 
-VS Code extension that measures cyclomatic and cognitive complexity for TypeScript code.
+Code complexity analysis tool for TypeScript with VS Code extension and CLI.
 
 ## Features
 
 - **Cyclomatic Complexity**: Measures the number of linearly independent paths through code
 - **Cognitive Complexity**: Measures how difficult code is to understand
-- **CodeLens Integration**: Shows complexity metrics inline above each function
+- **VS Code Extension**: CodeLens integration showing metrics inline above functions
+- **CLI Tool**: Analyze files and projects from the command line
 - **Mermaid Diagrams**: Generate control flow visualizations
 - **Configurable Thresholds**: Set warning and error levels for complexity
+- **Multiple Config Options**: Configure via file, CLI params, or VS Code settings
 
 ## Installation
+
+### VS Code Extension
 
 1. Download the latest `.vsix` file from releases
 2. In VS Code, run: Extensions > Install from VSIX...
@@ -25,9 +29,23 @@ pnpm package:vscode
 
 Then install the generated `dist/onion-tears-1.0.0.vsix` file.
 
+### CLI Tool
+
+Install globally:
+
+```bash
+pnpm install -g @onion-tears/cli
+```
+
+Or use directly with `pnpm dlx`:
+
+```bash
+pnpm dlx @onion-tears/cli project
+```
+
 ## Usage
 
-### CodeLens
+### VS Code Extension
 
 The extension automatically shows complexity metrics above each function in TypeScript files:
 
@@ -43,8 +61,6 @@ Icons indicate severity:
 
 Click "Show Control Flow Graph" to visualize the function's control flow as a Mermaid diagram.
 
-### Settings
-
 Configure thresholds in VS Code settings:
 
 ```json
@@ -53,6 +69,96 @@ Configure thresholds in VS Code settings:
   "onionTears.complexity.cyclomaticError": 20
 }
 ```
+
+### CLI Tool
+
+Analyze a single file:
+
+```bash
+onion-tears file src/example.ts
+```
+
+Analyze entire project:
+
+```bash
+onion-tears project
+onion-tears project ./src
+```
+
+With custom thresholds:
+
+```bash
+onion-tears file src/example.ts --warning 15 --error 30
+onion-tears project --warning 15 --error 30
+```
+
+Generate Mermaid diagrams:
+
+```bash
+onion-tears file src/example.ts --graph --outputDir ./graphs
+```
+
+### HTML Report
+
+- The CLI always generates an HTML report.
+- For `file` command: report is written to your `--outputDir` as `complexity-report.html` (default `./onion/complexity-report.html`).
+- For `project` command: report is written to `./onion/complexity-report.html`.
+
+Open the report in your browser:
+
+```bash
+open ./onion/complexity-report.html
+```
+
+## Configuration
+
+Configure complexity thresholds using one of these methods (in priority order):
+
+### 1. Config File
+
+Create `.onion-tears.json` in your project root:
+
+```json
+{
+  "cyclomaticWarning": 10,
+  "cyclomaticError": 20
+}
+```
+
+### 2. package.json
+
+Add an `onionTears` property to your `package.json`:
+
+```json
+{
+  "name": "my-project",
+  "onionTears": {
+    "cyclomaticWarning": 10,
+    "cyclomaticError": 20
+  }
+}
+```
+
+### 3. CLI Parameters
+
+Override config file settings with CLI flags:
+
+```bash
+onion-tears project --warning 15 --error 30
+```
+
+### 4. VS Code Settings
+
+For the VS Code extension, configure in settings:
+
+```json
+{
+  "onionTears.complexity.cyclomaticWarning": 10,
+  "onionTears.complexity.cyclomaticError": 20
+}
+```
+
+**Priority**: CLI params > config file > VS Code settings > defaults (10/20)
 
 ## Complexity Metrics
 

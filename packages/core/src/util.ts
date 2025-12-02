@@ -1,13 +1,22 @@
 import ts from 'typescript'
 
 export function parseFunctionName(node: ts.Node, sourceFile: ts.SourceFile): string {
-  let functionName = 'anonymous'
-  if (ts.isFunctionDeclaration(node) && node.name) {
-    functionName = node.name.getText(sourceFile)
-  } else if (ts.isMethodDeclaration(node) && node.name) {
-    functionName = node.name.getText(sourceFile)
-  } else if (ts.isVariableDeclaration(node.parent) && node.parent.name) {
-    functionName = node.parent.name.getText(sourceFile)
+  const getNameText = (n: ts.Node | undefined): string | undefined => {
+    if (!n) return undefined
+    if (ts.isFunctionDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isMethodDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isGetAccessorDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isSetAccessorDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isClassDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isVariableDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isPropertyDeclaration(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isPropertyAssignment(n) && n.name) return n.name.getText(sourceFile)
+    return undefined
   }
-  return functionName
+
+  const direct = getNameText(node)
+  if (direct) return direct
+
+  const fromParent = getNameText(node.parent)
+  return fromParent ?? 'anonymous'
 }

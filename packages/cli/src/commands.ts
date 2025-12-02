@@ -3,14 +3,12 @@ import path from 'node:path'
 import ts from 'typescript'
 import { analyzeSourceFile, generateMermaidForFunction } from '@onion-tears/core'
 import type { Config, FileComplexityResult } from '@onion-tears/core'
-import { cleanFilesFromDirectory, getThresholdStatusBadge } from './util.js'
+import { cleanFilesFromDirectory } from './util.js'
+import { createReport } from './report.js'
 
-export function runFileCommand(
-  filePath: string,
-  generateGraphs: boolean,
-  outputDir: string,
-  config: Config,
-) {
+const outputDir = path.join(process.cwd(), 'onion-tears')
+
+export function runFileCommand(filePath: string, generateGraphs: boolean, config: Config) {
   const fullPath = path.resolve(filePath)
 
   if (!fs.existsSync(fullPath)) {
@@ -29,25 +27,27 @@ export function runFileCommand(
     results: analyzeSourceFile(sourceFile, config),
   }
 
-  displayResults([result])
+  // Always write HTML report to outputDir
+  writeHtmlReport([result])
 
   // Generate Mermaid graph files if --graph
   if (generateGraphs) {
-    cleanFilesFromDirectory(outputDir)
+    const graphDir = path.join(outputDir, 'graphs')
+    cleanFilesFromDirectory(graphDir)
     console.log('Generating control flow graphs...\n')
     result.results.forEach((result) => {
       const output = generateMermaidForFunction(result)
-      const outputPath = path.join(outputDir, `${result.functionName}.mermaid`)
+      const outputPath = path.join(graphDir, `${result.functionName}.mermaid`)
       fs.writeFileSync(outputPath, output)
 
       console.log(`✓ ${result.functionName}.mermaid`)
     })
 
-    console.log(`\n✓ Generated ${result.results.length} graph(s) in ${outputDir}/`)
+    console.log(`\n✓ Generated ${result.results.length} graph(s) in ${graphDir}/`)
   }
 }
 
-export function runProjectCommand(dir: string, exclude: string[], config: Config) {
+export function runProjectCommand(dir: string, config: Config) {
   const projectPath = path.resolve(dir)
 
   // Try to use tsconfig.json first
@@ -57,10 +57,10 @@ export function runProjectCommand(dir: string, exclude: string[], config: Config
   }
 
   console.log(`Using TypeScript project: ${configPath}\n`)
-  analyzeTypescriptProject(configPath, exclude, config)
+  analyzeTypescriptProject(configPath, config)
 }
 
-function analyzeTypescriptProject(configPath: string, exclude: string[], config: Config) {
+function analyzeTypescriptProject(configPath: string, config: Config) {
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile)
   const parsedConfig = ts.parseJsonConfigFileContent(
     configFile.config,
@@ -74,16 +74,12 @@ function analyzeTypescriptProject(configPath: string, exclude: string[], config:
   })
 
   const sourceFiles = program.getSourceFiles().filter((sf) => {
-    // Filter out declaration files and node_modules
+    // Filter out declaration files
     if (sf.isDeclarationFile) return false
-    const filePath = sf.fileName
-    return !exclude.some((pattern) => {
-      if (pattern.includes('*')) {
-        const regex = new RegExp(pattern.replace(/\*/g, '.*'))
-        return regex.test(filePath)
-      }
-      return filePath.includes(pattern)
-    })
+    // Exclude test files like *.test.ts and *.test.tsx
+    const base = path.basename(sf.fileName)
+    if (base.endsWith('.test.ts') || base.endsWith('.test.tsx')) return false
+    return true
   })
 
   console.log(`Found ${sourceFiles.length} files in project\n`)
@@ -99,50 +95,18 @@ function analyzeTypescriptProject(configPath: string, exclude: string[], config:
   }
 
   console.log(`\nAnalyzed ${sourceFiles.length} files\n`)
-  displayResults(results)
+  writeHtmlReport(results)
 }
 
-function displayResults(fileResults: FileComplexityResult[]) {
-  fileResults.forEach(({ fileName, results }) => {
-    // Exclude files with no results
-    if (results.length === 0) return
+// Console summary output removed; HTML report is always generated instead.
 
-    console.log(`\n-- Complexity Report for ${fileName} --`)
-    let maxCyclomaticComplexity = 0
-    let totalCyclomaticComplexity = 0
-
-    let maxCognitiveComplexity = 0
-    let totalCognitiveComplexity = 0
-
-    results.forEach((result) => {
-      console.log(`[Line] ${result.line} Function: ${result.functionName}()`)
-      console.log(
-        `${getThresholdStatusBadge(result.thresholdStatus)} Cyclomatic Complexity: ${result.cyclomatic}`,
-      )
-      console.log(
-        `${getThresholdStatusBadge(result.thresholdStatus)} Cognitive Complexity: ${result.cognitive}`,
-      )
-      console.log('\n')
-
-      maxCyclomaticComplexity = Math.max(maxCyclomaticComplexity, result.cyclomatic)
-      totalCyclomaticComplexity += result.cyclomatic
-
-      maxCognitiveComplexity = Math.max(maxCognitiveComplexity, result.cognitive)
-      totalCognitiveComplexity += result.cognitive
-    })
-
-    const averageCyclomaticComplexity =
-      results.length > 0 ? (totalCyclomaticComplexity / results.length).toFixed(2) : '0'
-
-    const averageCognitiveComplexity =
-      results.length > 0 ? (totalCognitiveComplexity / results.length).toFixed(2) : '0'
-
-    console.log('-------------------------------------')
-    console.log(`Total Functions Found: ${results.length}`)
-    console.log(`Average Cyclomatic Complexity: ${averageCyclomaticComplexity}`)
-    console.log(`Maximum Cyclomatic Complexity: ${maxCyclomaticComplexity}`)
-    console.log(`Average Cognitive Complexity: ${averageCognitiveComplexity}`)
-    console.log(`Maximum Cognitive Complexity: ${maxCognitiveComplexity}`)
-    console.log('-------------------------------------\n')
-  })
+function writeHtmlReport(fileResults: FileComplexityResult[]) {
+  const outputPath = path.join(outputDir, 'complexity-report.html')
+  const html = createReport(fileResults)
+  const dir = path.dirname(outputPath)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  fs.writeFileSync(outputPath, html, 'utf8')
+  console.log(`\n✓ HTML report written to ${outputPath}\n`)
 }

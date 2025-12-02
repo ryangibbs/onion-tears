@@ -12,13 +12,14 @@ export function activate(context: vscode.ExtensionContext) {
       'onionTears.showControlFlowMenu',
       async (result: FunctionComplexityResult) => {
         const mermaid = generateMermaidForFunction(result)
-        const doc = await vscode.workspace.openTextDocument({
-          content: `\`\`\`mermaid\n${mermaid}\n\`\`\``,
-          language: 'markdown',
-        })
-        await vscode.window.showTextDocument(doc, { preview: true })
-        // Open markdown preview automatically
-        await vscode.commands.executeCommand('markdown.showPreview')
+        const panel = vscode.window.createWebviewPanel(
+          'onionTearsMermaid',
+          `Control Flow: ${result.functionName}()`,
+          vscode.ViewColumn.Beside,
+          { enableScripts: true },
+        )
+
+        panel.webview.html = getMermaidHtml(mermaid)
       },
     ),
   )
@@ -100,4 +101,37 @@ function getSeverityIcon(result: FunctionComplexityResult): string {
   }
 
   return '🟢'
+}
+
+function getMermaidHtml(graph: string): string {
+  return `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Onion Tears Control Flow</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; margin: 0; }
+        .container { padding: 16px; }
+        .mermaid { background: #fff; }
+      </style>
+      <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs'
+        mermaid.initialize({ startOnLoad: true, securityLevel: 'loose', theme: 'default' })
+        const graph = ${JSON.stringify(graph)};
+        window.addEventListener('DOMContentLoaded', () => {
+          const el = document.querySelector('.mermaid')
+          if (el) {
+            el.textContent = graph
+            mermaid.run({ querySelector: '.mermaid' })
+          }
+        })
+      </script>
+    </head>
+    <body>
+      <div class="container">
+        <div class="mermaid"></div>
+      </div>
+    </body>
+  </html>`
 }

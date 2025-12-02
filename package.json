@@ -20,8 +20,8 @@
     "test": "pnpm -r test",
     "lint": "oxlint .",
     "format": "oxfmt -c oxfmt.json packages",
-    "cli": "pnpm --filter @onion-tears/cli exec onion-tears",
-    "cli:link": "cd /Users/ryangibbs/Code/onion-tears/packages/cli && pnpm link --global",
+    "cli": "tsx packages/cli/src/cli.ts",
+    "cli:link": "cd packages/cli && pnpm link --global",
     "package:vscode": "pnpm --filter onion-tears package",
     "prepare": "husky"
   },
