@@ -21,7 +21,7 @@
     "build": "pnpm -r build",
     "dev": "pnpm --filter @onion-tears/core dev",
     "test": "pnpm -r test",
-    "lint": "oxlint .",
+    "lint": "oxlint --ignore-pattern 'node_modules/**' .",
     "lint:ci": "pnpm run lint -- --error-on-warn",
     "format": "oxfmt -c oxfmt.json packages",
     "format:ci": "pnpm run format -- --check",
