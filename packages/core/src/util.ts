@@ -1,5 +1,14 @@
 import ts from 'typescript'
 
+export function isFunctionNode(node: ts.Node): boolean {
+  return (
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node)
+  )
+}
+
 export function parseFunctionName(node: ts.Node, sourceFile: ts.SourceFile): string {
   const getNameText = (n: ts.Node | undefined): string | undefined => {
     if (!n) return undefined

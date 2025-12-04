@@ -1,6 +1,11 @@
-import type { Config, FunctionComplexityResult, ThresholdStatus } from './types.js'
+import type {
+  Config,
+  FunctionComplexityResult,
+  ComplexityContributor,
+  ComplexityResult,
+} from './types.js'
 import ts from 'typescript'
-import { parseFunctionName } from './util.js'
+import { parseFunctionName, isFunctionNode } from './util.js'
 
 export function analyzeSourceFile(
   sourceFile: ts.SourceFile,
@@ -19,33 +24,33 @@ export function analyzeSourceFile(
       return
     }
 
-    const isFunction =
-      ts.isFunctionDeclaration(node) ||
-      ts.isFunctionExpression(node) ||
-      ts.isArrowFunction(node) ||
-      ts.isMethodDeclaration(node)
-
-    if (isFunction) {
+    if (isFunctionNode(node)) {
       try {
         // Get the line number where the function starts
         const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
-        const cyclomatic = calculateCyclomaticComplexity(node)
-
-        let thresholdStatus: ThresholdStatus = undefined
-        if (config.cyclomaticError && cyclomatic >= config.cyclomaticError) {
-          thresholdStatus = 'error'
-        } else if (config.cyclomaticWarning && cyclomatic >= config.cyclomaticWarning) {
-          thresholdStatus = 'warning'
-        }
+        const cyclomaticComplexity = calculateCyclomaticComplexity(node, sourceFile)
+        const cognitiveComplexity = calculateCognitiveComplexity(node, sourceFile)
 
         const result: FunctionComplexityResult = {
-          cyclomatic,
-          thresholdStatus,
+          cyclomatic: cyclomaticComplexity.score,
+          cyclomaticContributors: cyclomaticComplexity.contributors,
+          cognitive: cognitiveComplexity.score,
+          cognitiveContributors: cognitiveComplexity.contributors,
           functionName: parseFunctionName(node, sourceFile),
           line: line + 1,
-          cognitive: calculateCognitiveComplexity(node),
           astNode: node,
+          thresholdStatus: undefined,
         }
+
+        if (config.cyclomaticError && cyclomaticComplexity.score >= config.cyclomaticError) {
+          result.thresholdStatus = 'error'
+        } else if (
+          config.cyclomaticWarning &&
+          cyclomaticComplexity.score >= config.cyclomaticWarning
+        ) {
+          result.thresholdStatus = 'warning'
+        }
+
         results.push(result)
       } catch (error) {
         console.error(`Error analyzing function at position ${node.pos}:`, error)
@@ -65,21 +70,48 @@ export function analyzeSourceFile(
   return results
 }
 
-export function calculateCyclomaticComplexity(funcNode: ts.Node): number {
+export function calculateCyclomaticComplexity(
+  funcNode: ts.Node,
+  sourceFile: ts.SourceFile,
+): ComplexityResult {
   let edges = 0 // Decision points (creates branches)
+  const contributors: ComplexityContributor[] = []
 
   const visitor = (node: ts.Node): void => {
+    const addContributor = (type: string, cost: number = 1) => {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+        node.getStart(sourceFile),
+      )
+      const text = node.getText(sourceFile).slice(0, 50).replace(/\n/g, ' ')
+      contributors.push({ type, cost, line: line + 1, column: character + 1, text })
+      edges += cost
+    }
+
     switch (node.kind) {
       // 1. Conditional & Loop Statements (each adds +1 decision point)
       case ts.SyntaxKind.IfStatement:
+        addContributor('if statement')
+        break
       case ts.SyntaxKind.WhileStatement:
+        addContributor('while loop')
+        break
       case ts.SyntaxKind.DoStatement:
+        addContributor('do-while loop')
+        break
       case ts.SyntaxKind.ForStatement:
+        addContributor('for loop')
+        break
       case ts.SyntaxKind.ForInStatement:
+        addContributor('for-in loop')
+        break
       case ts.SyntaxKind.ForOfStatement:
-      case ts.SyntaxKind.ConditionalExpression: // Ternary operator: a ? b : c
-      case ts.SyntaxKind.CatchClause: // Error handling path
-        edges++
+        addContributor('for-of loop')
+        break
+      case ts.SyntaxKind.ConditionalExpression:
+        addContributor('ternary operator')
+        break
+      case ts.SyntaxKind.CatchClause:
+        addContributor('catch clause')
         break
 
       // 2. Switch Statements - count each case clause
@@ -87,6 +119,17 @@ export function calculateCyclomaticComplexity(funcNode: ts.Node): number {
         const switchStmt = node as ts.SwitchStatement
         switchStmt.caseBlock.clauses.forEach((clause) => {
           if (ts.isCaseClause(clause)) {
+            const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+              clause.getStart(sourceFile),
+            )
+            const text = clause.getText(sourceFile).slice(0, 50).replace(/\n/g, ' ')
+            contributors.push({
+              type: 'case clause',
+              cost: 1,
+              line: line + 1,
+              column: character + 1,
+              text,
+            })
             edges++
           }
         })
@@ -99,6 +142,19 @@ export function calculateCyclomaticComplexity(funcNode: ts.Node): number {
           binaryExpr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken || // &&
           binaryExpr.operatorToken.kind === ts.SyntaxKind.BarBarToken // ||
         ) {
+          const op =
+            binaryExpr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ? '&&' : '||'
+          const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+            binaryExpr.operatorToken.getStart(sourceFile),
+          )
+          const text = binaryExpr.getText(sourceFile).slice(0, 50).replace(/\n/g, ' ')
+          contributors.push({
+            type: `logical ${op}`,
+            cost: 1,
+            line: line + 1,
+            column: character + 1,
+            text,
+          })
           edges++
         }
         break
@@ -114,33 +170,74 @@ export function calculateCyclomaticComplexity(funcNode: ts.Node): number {
   // Cyclomatic Complexity = decision points + 1
   const score = edges + 1
 
-  return score
+  return { score, contributors }
 }
 
-export function calculateCognitiveComplexity(funcNode: ts.Node): number {
+export function calculateCognitiveComplexity(
+  funcNode: ts.Node,
+  sourceFile: ts.SourceFile,
+): ComplexityResult {
   let score = 0
   let nestingLevel = 0
+  const contributors: ComplexityContributor[] = []
 
   const visitor = (node: ts.Node): void => {
     let incrementsNesting = false
 
+    const addContributor = (type: string, cost: number) => {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+        node.getStart(sourceFile),
+      )
+      const text = node.getText(sourceFile).slice(0, 50).replace(/\n/g, ' ')
+      contributors.push({ type, cost, line: line + 1, column: character + 1, text })
+      score += cost
+    }
+
     switch (node.kind) {
       // Control flow structures that increase complexity and nesting
       case ts.SyntaxKind.IfStatement:
+        addContributor('if statement', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.ForStatement:
+        addContributor('for loop', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.ForInStatement:
+        addContributor('for-in loop', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.ForOfStatement:
+        addContributor('for-of loop', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.WhileStatement:
+        addContributor('while loop', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.DoStatement:
-      case ts.SyntaxKind.ConditionalExpression: // Ternary operator
+        addContributor('do-while loop', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
+      case ts.SyntaxKind.ConditionalExpression:
+        addContributor('ternary operator', 1 + nestingLevel)
+        incrementsNesting = true
+        nestingLevel++
+        break
       case ts.SyntaxKind.CatchClause:
-        score += 1 + nestingLevel
+        addContributor('catch clause', 1 + nestingLevel)
         incrementsNesting = true
         nestingLevel++
         break
 
       case ts.SyntaxKind.SwitchStatement:
-        score += 1 + nestingLevel
+        addContributor('switch statement', 1 + nestingLevel)
         incrementsNesting = true
         nestingLevel++
         break
@@ -153,6 +250,23 @@ export function calculateCognitiveComplexity(funcNode: ts.Node): number {
           binaryExpr.operatorToken.kind === ts.SyntaxKind.BarBarToken || // ||
           binaryExpr.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken // ??
         ) {
+          const op =
+            binaryExpr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+              ? '&&'
+              : binaryExpr.operatorToken.kind === ts.SyntaxKind.BarBarToken
+                ? '||'
+                : '??'
+          const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+            binaryExpr.operatorToken.getStart(sourceFile),
+          )
+          const text = binaryExpr.getText(sourceFile).slice(0, 50).replace(/\n/g, ' ')
+          contributors.push({
+            type: `logical ${op}`,
+            cost: 1,
+            line: line + 1,
+            column: character + 1,
+            text,
+          })
           score += 1
         }
         break
@@ -170,5 +284,5 @@ export function calculateCognitiveComplexity(funcNode: ts.Node): number {
   // Start traversal from the function's body
   ts.forEachChild(funcNode, visitor)
 
-  return score
+  return { score, contributors }
 }

@@ -5,6 +5,14 @@ export interface FileComplexityResult {
   results: FunctionComplexityResult[]
 }
 
+export interface ComplexityContributor {
+  type: string
+  cost: number
+  line: number
+  column: number
+  text: string
+}
+
 export interface FunctionComplexityResult {
   functionName: string
   line: number
@@ -12,6 +20,13 @@ export interface FunctionComplexityResult {
   cognitive: number
   astNode: ts.Node
   thresholdStatus: ThresholdStatus
+  cyclomaticContributors: ComplexityContributor[]
+  cognitiveContributors: ComplexityContributor[]
+}
+
+export interface ComplexityResult {
+  score: number
+  contributors: ComplexityContributor[]
 }
 
 export type ThresholdStatus = 'warning' | 'error' | undefined
