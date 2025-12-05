@@ -12,14 +12,14 @@ export function isFunctionNode(node: ts.Node): boolean {
 export function parseFunctionName(node: ts.Node, sourceFile: ts.SourceFile): string {
   const getNameText = (n: ts.Node | undefined): string | undefined => {
     if (!n) return undefined
-    if (ts.isFunctionDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isMethodDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isGetAccessorDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isSetAccessorDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isClassDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isVariableDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isPropertyDeclaration(n) && n.name) return n.name.getText(sourceFile)
-    if (ts.isPropertyAssignment(n) && n.name) return n.name.getText(sourceFile)
+    if (ts.isFunctionDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isMethodDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isGetAccessorDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isSetAccessorDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isClassDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isVariableDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isPropertyDeclaration(n)) return n.name?.getText(sourceFile)
+    if (ts.isPropertyAssignment(n)) return n.name?.getText(sourceFile)
     return undefined
   }
 

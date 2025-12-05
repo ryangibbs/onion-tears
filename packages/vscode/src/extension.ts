@@ -108,13 +108,11 @@ function getConfig(): Config {
 }
 
 function getSeverityIcon(result: FunctionComplexityResult): string {
-  const config = getConfig()
-
-  if (config.cyclomaticError && result.cyclomatic >= config.cyclomaticError) {
+  if (result.thresholdStatus === 'error') {
     return '🔴'
   }
 
-  if (config.cyclomaticWarning && result.cyclomatic >= config.cyclomaticWarning) {
+  if (result.thresholdStatus === 'warning') {
     return '🟡'
   }
 
