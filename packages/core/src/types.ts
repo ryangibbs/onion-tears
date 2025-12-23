@@ -41,3 +41,10 @@ export interface Config {
    */
   cyclomaticWarning: number
 }
+
+export interface CallPathNode {
+  functionName: string
+  filePath: string
+  node: ts.Node
+  callers: CallPathNode[]
+}

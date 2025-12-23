@@ -24,10 +24,23 @@
   "contributes": {
     "commands": [
       {
-        "command": "onionTears.showControlFlowMenu",
-        "title": "Show Control Flow Graph"
+        "command": "_onionTears.showControlFlow",
+        "title": "Onion: Show Control Flow Graph"
+      },
+      {
+        "command": "_onionTears.showCallPath",
+        "title": "Onion: Show Call Path Tree"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "_onionTears.showCallPath",
+          "when": "editorLangId == typescript || editorLangId == typescriptreact",
+          "group": "navigation@1"
+        }
+      ]
+    },
     "configuration": {
       "title": "Onion Tears",
       "properties": {
